@@ -297,23 +297,68 @@ export function mpvHandlerUrl(url: string) {
   return `mpv-handler://play/${data}`;
 }
 
+/** What a Cast device should be told a file is, by its extension. */
+const MIME_BY_EXTENSION: Record<string, string> = {
+  mkv: "video/x-matroska",
+  mp4: "video/mp4",
+  m4v: "video/mp4",
+  mov: "video/quicktime",
+  webm: "video/webm",
+  avi: "video/x-msvideo",
+  ts: "video/mp2t",
+  m3u8: "application/x-mpegURL",
+};
+
+/**
+ * The media type, from whichever of the file name or the URL path ends in a
+ * video extension. Undefined where neither does: a wrong guess is worse than
+ * letting the caster probe.
+ */
+export function mediaMimeType(url: string, filename?: string): string | undefined {
+  const candidates = [filename ?? ""];
+  try {
+    candidates.push(new URL(url).pathname);
+  } catch {
+    // Unparseable URLs still get the filename check.
+  }
+  for (const candidate of candidates) {
+    const match = /\.([a-z0-9]+)$/i.exec(candidate.trim());
+    const mime = match && MIME_BY_EXTENSION[match[1].toLowerCase()];
+    if (mime) return mime;
+  }
+  return undefined;
+}
+
 /**
  * Web Video Caster's documented x-callback-url form, as listed at
  * https://www.webvideocaster.com/integrations
  *
- * Every value is URL-encoded, the stream URL included. `subtitle` takes one
- * external subtitle file, and `poster` is what the Cast device shows while
- * buffering. The scheme carries no return address, so the "how far did you
- * get?" prompt does the reporting, as it does for VLC.
+ * Every value is URL-encoded, the stream URL included. The stream is a media
+ * file, never a web page, so `skip_page_load` keeps the caster from opening
+ * it in its browser — a debrid link with no extension was rendered there as
+ * a screen of bytes — and `mime_type` says what it is when the name allows.
+ * `subtitle` takes one external subtitle file, `poster` is shown while the
+ * Cast device buffers, and each `header` is one the stream host requires. The
+ * scheme carries no return address, so the "how far did you get?" prompt does
+ * the reporting, as it does for VLC.
  */
 export function webVideoCasterUrl(
   url: string,
   title: string,
-  options: { subtitleUrl?: string; posterUrl?: string } = {},
+  options: {
+    subtitleUrl?: string;
+    posterUrl?: string;
+    filename?: string;
+    headers?: Record<string, string>;
+  } = {},
 ) {
-  const query = new URLSearchParams({ url, title });
+  const query = new URLSearchParams({ url, title, skip_page_load: "true" });
+  const mime = mediaMimeType(url, options.filename);
+  if (mime) query.set("mime_type", mime);
   if (options.subtitleUrl) query.set("subtitle", options.subtitleUrl);
   if (options.posterUrl) query.set("poster", options.posterUrl);
+  for (const [name, value] of Object.entries(options.headers ?? {}))
+    query.append("header", `${name}: ${value}`);
   return `wvc-x-callback://open?${query.toString()}`;
 }
 
@@ -417,6 +462,9 @@ export function launchExternalPlayer(
   if (mode === "webvideocaster") {
     window.location.href = webVideoCasterUrl(safeUrl, title, {
       subtitleUrl: options.subtitleUrl,
+      posterUrl: options.posterUrl,
+      filename: options.filename,
+      headers: options.headers,
     });
     return;
   }

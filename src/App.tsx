@@ -1603,6 +1603,7 @@ export function App() {
     meta: Meta,
     video?: Video,
     positionMs?: number,
+    stream?: Stream,
   ) {
     // Written before the launch, not after: handing off navigates away, and on
     // Android the process may not survive to run another line.
@@ -1617,6 +1618,16 @@ export function App() {
     const relay = canReturnToApp() ? "" : newRelayToken();
     platform.externalPlayer.launch(mode, url, video?.title || meta.name, {
       positionSeconds: resumeMs / 1000,
+      // What the file is, for a caster that only sees a bare debrid URL. The
+      // addon's hint when it gave one; otherwise the file name most addons
+      // print in the stream's own text.
+      filename:
+        stream?.behaviorHints?.filename ??
+        /\S+\.(?:mkv|mp4|m4v|mov|webm|avi|ts|m3u8)\b/i.exec(
+          `${stream?.title ?? ""} ${stream?.description ?? ""}`,
+        )?.[0],
+      posterUrl: meta.poster,
+      headers: stream?.behaviorHints?.proxyHeaders?.request,
       returnUrlFor: relay
         ? (query) =>
             relayReturnUrl(
@@ -2378,6 +2389,7 @@ export function App() {
               current.meta,
               current.video,
               positionMs,
+              current.stream,
             );
           }}
           onProgress={(positionMs, durationMs, ended) =>
@@ -2471,7 +2483,7 @@ export function App() {
             if (chosen !== "internal" && url) {
               // Details stays open: the stream opened elsewhere, so this page
               // is exactly where you want to be when you come back.
-              handOffToExternalPlayer(chosen, url, meta, video);
+              handOffToExternalPlayer(chosen, url, meta, video, undefined, stream);
               return;
             }
             rememberBingeGroup(meta.id, stream.behaviorHints?.bingeGroup);

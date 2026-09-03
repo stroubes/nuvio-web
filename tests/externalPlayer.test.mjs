@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { infusePlaybackUrl, shortcutReturnUrl, webVideoCasterUrl } from "../src/lib/externalPlayer.ts";
+import { infusePlaybackUrl, mediaMimeType, shortcutReturnUrl, webVideoCasterUrl } from "../src/lib/externalPlayer.ts";
 
 test("Infuse handoff encodes signed stream URLs and a useful filename", () => {
   const result = infusePlaybackUrl(
@@ -67,4 +67,28 @@ test("Web Video Caster handoff encodes the stream, title and subtitle", () => {
   // The raw stream URL must not appear unencoded, or its "&" would split
   // the callback's own query.
   assert.ok(!result.includes("?token=a+b&part=1"));
+});
+
+test("Web Video Caster is told the type and never loads the link as a page", () => {
+  const result = webVideoCasterUrl(
+    "https://cdn.example/dl/a0e39abd-4493",
+    "Silo",
+    {
+      filename: "Silo.S01E02.2160p.WEB-DL.mkv",
+      posterUrl: "https://img.example/silo.jpg",
+      headers: { Referer: "https://addon.example/" },
+    },
+  );
+  const params = new URLSearchParams(result.slice(result.indexOf("?") + 1));
+  assert.equal(params.get("skip_page_load"), "true");
+  assert.equal(params.get("mime_type"), "video/x-matroska");
+  assert.equal(params.get("poster"), "https://img.example/silo.jpg");
+  assert.deepEqual(params.getAll("header"), ["Referer: https://addon.example/"]);
+});
+
+test("the media type comes from the file name, then the URL, then nowhere", () => {
+  assert.equal(mediaMimeType("https://cdn.example/dl/abc", "Show.S01E01.mkv"), "video/x-matroska");
+  assert.equal(mediaMimeType("https://cdn.example/movie.mp4?token=1"), "video/mp4");
+  assert.equal(mediaMimeType("https://cdn.example/live/master.m3u8"), "application/x-mpegURL");
+  assert.equal(mediaMimeType("https://cdn.example/dl/abc"), undefined);
 });

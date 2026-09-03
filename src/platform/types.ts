@@ -216,6 +216,16 @@ export type ExternalPlayerLaunchOptions = {
   /** An external subtitle file, if the stream came with one. */
   subtitleUrl?: string;
   /**
+   * The media's file name, when the addon said. Signed and debrid links often
+   * carry no extension, and a caster that fetches by URL alone cannot tell a
+   * video from a web page without one.
+   */
+  filename?: string;
+  /** Artwork a Cast device can show while it buffers. */
+  posterUrl?: string;
+  /** Request headers the stream host insists on, from the addon's hints. */
+  headers?: Record<string, string>;
+  /**
    * Builds the address a player should return to, given the query it should
    * carry. A function rather than a string because the browser's route back
    * from an installed iOS web app has to fold that query inside the text it
