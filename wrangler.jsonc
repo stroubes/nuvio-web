@@ -1,12 +1,18 @@
 {
-  // Serves the built PWA from Cloudflare Workers static assets, on the custom
-  // domain below. Build first (`npm run build`), then `npx wrangler deploy`.
+  // Serves the built PWA from Cloudflare Workers static assets on the custom
+  // domain below, plus the small redirect in worker-cast/ that gives streams
+  // a file-shaped address. Build first (`npm run build`), then
+  // `npx wrangler deploy`.
   "name": "nuvio-web",
+  "main": "worker-cast/index.js",
   "compatibility_date": "2026-08-01",
   "assets": {
     "directory": "./dist",
+    "binding": "ASSETS",
     // Client-side routes: any unknown path serves index.html.
-    "not_found_handling": "single-page-application"
+    "not_found_handling": "single-page-application",
+    // Everything else is answered from the assets without waking the Worker.
+    "run_worker_first": ["/v/*"]
   },
   "routes": [
     { "pattern": "nuvio.rrr-media.com", "custom_domain": true }

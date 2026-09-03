@@ -287,14 +287,50 @@ export function androidIntentUrl(
  * anything outside Latin-1, so the URL becomes UTF-8 bytes first.
  */
 export function mpvHandlerUrl(url: string) {
+  return `mpv-handler://play/${base64Url(url)}`;
+}
+
+/** URL-safe base64 with the padding stripped, over the UTF-8 bytes. */
+function base64Url(value: string) {
   let binary = "";
-  for (const byte of new TextEncoder().encode(url))
+  for (const byte of new TextEncoder().encode(value))
     binary += String.fromCharCode(byte);
-  const data = btoa(binary)
+  return btoa(binary)
     .replaceAll("+", "-")
     .replaceAll("/", "_")
     .replaceAll("=", "");
-  return `mpv-handler://play/${data}`;
+}
+
+/**
+ * The same stream, at an address that ends the way a file does.
+ *
+ * Casters decide what a link is by its extension, and a debrid link has
+ * none. `/v/<url>/<name>.mkv` on this site redirects to the real address —
+ * see worker-cast/ — so whoever fetches it, phone or Chromecast, still
+ * fetches the stream itself. The name is the addon's when it gave one, else
+ * the title with the extension the URL suggests, else `.mkv`, which is what
+ * nearly every such stream is.
+ */
+export function fileShapedUrl(
+  appUrl: string,
+  url: string,
+  title: string,
+  filename?: string,
+) {
+  const known = filename?.trim();
+  let name = known && /\.[a-z0-9]{2,4}$/i.test(known) ? known : "";
+  if (!name) {
+    const fromUrl = (() => {
+      try {
+        return /\.(mkv|mp4|m4v|mov|webm|avi|ts|m3u8)$/i.exec(new URL(url).pathname)?.[1];
+      } catch {
+        return undefined;
+      }
+    })();
+    name = `${title}.${(fromUrl ?? "mkv").toLowerCase()}`;
+  }
+  const safe = name.replace(/[^a-z0-9 ._-]/gi, "_").replace(/\s+/g, ".") || "video.mkv";
+  return `${appUrl}v/${base64Url(url)}/${encodeURIComponent(safe)}`;
 }
 
 /** What a Cast device should be told a file is, by its extension. */
@@ -464,12 +500,16 @@ export function launchExternalPlayer(
     return;
   }
   if (mode === "webvideocaster") {
-    window.location.href = webVideoCasterUrl(safeUrl, title, {
+    window.location.href = webVideoCasterUrl(
+      fileShapedUrl(installedAppUrl(), safeUrl, title, options.filename),
+      title,
+      {
       subtitleUrl: options.subtitleUrl,
       posterUrl: options.posterUrl,
       filename: options.filename,
       headers: options.headers,
-    });
+      },
+    );
     return;
   }
   if (mode === "iina") {

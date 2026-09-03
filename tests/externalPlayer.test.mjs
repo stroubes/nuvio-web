@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { infusePlaybackUrl, mediaMimeType, shortcutReturnUrl, webVideoCasterUrl } from "../src/lib/externalPlayer.ts";
+import { fileShapedUrl, infusePlaybackUrl, mediaMimeType, shortcutReturnUrl, webVideoCasterUrl } from "../src/lib/externalPlayer.ts";
 
 test("Infuse handoff encodes signed stream URLs and a useful filename", () => {
   const result = infusePlaybackUrl(
@@ -93,4 +93,20 @@ test("the media type comes from the file name, then the URL, then nowhere", () =
   assert.equal(mediaMimeType("https://cdn.example/movie.mp4?token=1"), "video/mp4");
   assert.equal(mediaMimeType("https://cdn.example/live/master.m3u8"), "application/x-mpegURL");
   assert.equal(mediaMimeType("https://cdn.example/dl/abc"), undefined);
+});
+
+test("a debrid link gets a file-shaped address that decodes back to itself", () => {
+  const stream = "https://nexus-222.cdn.example/dl/a0e39abd-4493?token=a+b/c=";
+  const result = fileShapedUrl("https://nuvio.example/", stream, "Silo S1E2", "Silo.S01E02.2160p.WEB-DL.mkv");
+  assert.ok(result.startsWith("https://nuvio.example/v/"));
+  assert.ok(result.endsWith("/Silo.S01E02.2160p.WEB-DL.mkv"));
+  const encoded = result.split("/")[4];
+  assert.ok(/^[A-Za-z0-9_-]+$/.test(encoded));
+  const padded = encoded.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - (encoded.length % 4)) % 4);
+  assert.equal(Buffer.from(padded, "base64").toString("utf8"), stream);
+});
+
+test("without a file name the title and a guessed extension name the file", () => {
+  assert.ok(fileShapedUrl("https://nuvio.example/", "https://cdn.example/dl/abc", "House / Dragon: S1E1").endsWith("/House._.Dragon_.S1E1.mkv"));
+  assert.ok(fileShapedUrl("https://nuvio.example/", "https://cdn.example/movie.mp4?x=1", "Movie").endsWith("/Movie.mp4"));
 });
