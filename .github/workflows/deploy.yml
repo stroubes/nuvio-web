@@ -34,4 +34,7 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # Pinned so the action never falls back to an old wrangler that
+          # does not understand an assets-only Worker.
+          wranglerVersion: "4.128.0"
           command: deploy
