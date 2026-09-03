@@ -1,0 +1,14 @@
+{
+  // Serves the built PWA from Cloudflare Workers static assets, on the custom
+  // domain below. Build first (`npm run build`), then `npx wrangler deploy`.
+  "name": "nuvio-web",
+  "compatibility_date": "2026-08-01",
+  "assets": {
+    "directory": "./dist",
+    // Client-side routes: any unknown path serves index.html.
+    "not_found_handling": "single-page-application"
+  },
+  "routes": [
+    { "pattern": "nuvio.rrr-media.com", "custom_domain": true }
+  ]
+}

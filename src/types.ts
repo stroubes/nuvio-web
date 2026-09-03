@@ -242,6 +242,7 @@ export type ExternalPlayerMode =
   | "android-chooser"
   | "outplayer"
   | "infuse"
+  | "webvideocaster"
   | "iina"
   | "m3u";
 export type NavKey =

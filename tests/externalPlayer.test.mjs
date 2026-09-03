@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { infusePlaybackUrl, shortcutReturnUrl } from "../src/lib/externalPlayer.ts";
+import { infusePlaybackUrl, shortcutReturnUrl, webVideoCasterUrl } from "../src/lib/externalPlayer.ts";
 
 test("Infuse handoff encodes signed stream URLs and a useful filename", () => {
   const result = infusePlaybackUrl(
@@ -51,4 +51,20 @@ test("the Shortcut return address follows wherever the app is served from", () =
       .split("?").slice(1).join("?"),
   );
   assert.equal(bare.get("text"), "webapp://example.com/?nuvio-external=stopped");
+});
+
+test("Web Video Caster handoff encodes the stream, title and subtitle", () => {
+  const result = webVideoCasterUrl(
+    "https://media.example/movie.mkv?token=a+b&part=1",
+    "House / Dragon: S1E1",
+    { subtitleUrl: "https://subs.example/en.srt?x=1&y=2" },
+  );
+  assert.ok(result.startsWith("wvc-x-callback://open?"));
+  const params = new URLSearchParams(result.slice(result.indexOf("?") + 1));
+  assert.equal(params.get("url"), "https://media.example/movie.mkv?token=a+b&part=1");
+  assert.equal(params.get("title"), "House / Dragon: S1E1");
+  assert.equal(params.get("subtitle"), "https://subs.example/en.srt?x=1&y=2");
+  // The raw stream URL must not appear unencoded, or its "&" would split
+  // the callback's own query.
+  assert.ok(!result.includes("?token=a+b&part=1"));
 });

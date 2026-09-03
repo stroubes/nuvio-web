@@ -17,7 +17,7 @@ import type { ExternalPlayerReport } from "./externalHandoff";
 const TOKEN_KEY = "nuvio-web-return-token";
 
 /** Where the relay runs. See worker/ for what it is and what it holds. */
-export const RELAY_URL = "https://nuvio-return-relay.lucaboox.workers.dev";
+export const RELAY_URL = "https://nuvio-return-relay.rreinsch.workers.dev";
 
 /**
  * A fresh token per hand-off, 128 bits from the platform's own source.

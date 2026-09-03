@@ -164,6 +164,15 @@ const externalPlayerDefinitions: readonly ExternalPlayerDefinition[] = [
     platforms: { settings: ["apple-mobile", "macos"], player: ["apple-mobile", "macos"] },
   },
   {
+    // Web Video Caster is the one route from a phone to a Chromecast that
+    // needs no native Cast SDK: it hands the stream URL to the Cast device,
+    // which fetches it directly, so nothing is transcoded on the phone. It
+    // exists on both mobile platforms and registers the same scheme on each.
+    mode: "webvideocaster",
+    label: "Web Video Caster (Chromecast)",
+    platforms: { settings: ["android", "apple-mobile"], player: ["android", "apple-mobile"] },
+  },
+  {
     mode: "iina",
     label: "IINA",
     platforms: { settings: ["macos"], player: ["macos"] },
@@ -289,6 +298,26 @@ export function mpvHandlerUrl(url: string) {
 }
 
 /**
+ * Web Video Caster's documented x-callback-url form, as listed at
+ * https://www.webvideocaster.com/integrations
+ *
+ * Every value is URL-encoded, the stream URL included. `subtitle` takes one
+ * external subtitle file, and `poster` is what the Cast device shows while
+ * buffering. The scheme carries no return address, so the "how far did you
+ * get?" prompt does the reporting, as it does for VLC.
+ */
+export function webVideoCasterUrl(
+  url: string,
+  title: string,
+  options: { subtitleUrl?: string; posterUrl?: string } = {},
+) {
+  const query = new URLSearchParams({ url, title });
+  if (options.subtitleUrl) query.set("subtitle", options.subtitleUrl);
+  if (options.posterUrl) query.set("poster", options.posterUrl);
+  return `wvc-x-callback://open?${query.toString()}`;
+}
+
+/**
  * Where Outplayer should send the viewer back to, and what it should say.
  *
  * x-cancel fires when the video is closed and appends `position` and
@@ -383,6 +412,12 @@ export function launchExternalPlayer(
   }
   if (mode === "infuse") {
     window.location.href = infusePlaybackUrl(safeUrl, title);
+    return;
+  }
+  if (mode === "webvideocaster") {
+    window.location.href = webVideoCasterUrl(safeUrl, title, {
+      subtitleUrl: options.subtitleUrl,
+    });
     return;
   }
   if (mode === "iina") {
