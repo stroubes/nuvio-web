@@ -3634,7 +3634,7 @@ function UpdateRow() {
                 ? "You are on the latest version."
                 : state === "pending"
                   ? "An update is downloaded and ready to install."
-                  : `Build ${new Date(__APP_BUILD__).toLocaleString()}`}
+                  : `Build ${__APP_BUILD__}`}
           </small>
         </span>
         <button
