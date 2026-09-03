@@ -104,7 +104,7 @@ export function chromecastAudioRisk(text: string): string | null {
   const name = text.toLowerCase();
   if (/true[\s.-]?hd|atmos/.test(name)) return "TrueHD/Atmos audio";
   if (/\bdts(?:[\s.-]?(?:hd|x|ma))?\b/.test(name)) return "DTS audio";
-  if (/\b(?:ddp|dd\+|e-?ac-?3|eac3)\b|dolby digital plus/.test(name))
+  if (/\bddp|dd\+|\be-?ac-?3\b|dolby digital plus/.test(name))
     return "Dolby Digital Plus audio";
   return null;
 }
