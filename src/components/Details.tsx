@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import { loadStreams, resolveMeta } from "../lib/addons";
-import { assessPlayback, shouldUseRemuxFallback } from "../lib/playback";
+import { assessPlayback, chromecastAudioRisk, shouldUseRemuxFallback } from "../lib/playback";
 import { safeHttpUrl } from "../lib/security";
 import {
   enrichMetadata,
@@ -1289,6 +1289,16 @@ export function Details({
                             return stream.behaviorHints?.notWebReady
                               ? " · External player recommended"
                               : "";
+                          })()}
+                          {(() => {
+                            const risk = chromecastAudioRisk(
+                              `${stream.title ?? ""} ${stream.description ?? ""} ${stream.behaviorHints?.filename ?? ""}`,
+                            );
+                            return risk ? (
+                              <span className="cast-warning">
+                                {` · ${risk}: may be silent on Chromecast`}
+                              </span>
+                            ) : null;
                           })()}
                         </small>
                         {streamBadgeSettings.placement === "BOTTOM" && (

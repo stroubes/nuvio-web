@@ -8118,3 +8118,8 @@ body.is-locked {
   display: flex;
   gap: 10px;
 }
+
+/* A stream whose audio a Chromecast cannot decode, so it can be passed over. */
+.cast-warning {
+  color: #f2b34c;
+}

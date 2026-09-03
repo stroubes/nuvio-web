@@ -90,3 +90,21 @@ export function audioIsSilent(element: HTMLVideoElement): boolean {
     media.webkitAudioDecodedByteCount === 0
   );
 }
+
+/**
+ * Audio a Chromecast cannot decode, spotted in a stream's name.
+ *
+ * A caster hands the file straight to the device, which plays the video and
+ * stays silent on a track it has no decoder for: TrueHD and Atmos never, DTS
+ * never, and Dolby Digital Plus only when the TV behind it will take the
+ * bitstream. Plain AC3 and AAC are always fine. Named here so the safe
+ * streams can be told apart before one is sent to the TV.
+ */
+export function chromecastAudioRisk(text: string): string | null {
+  const name = text.toLowerCase();
+  if (/true[\s.-]?hd|atmos/.test(name)) return "TrueHD/Atmos audio";
+  if (/\bdts(?:[\s.-]?(?:hd|x|ma))?\b/.test(name)) return "DTS audio";
+  if (/\b(?:ddp|dd\+|e-?ac-?3|eac3)\b|dolby digital plus/.test(name))
+    return "Dolby Digital Plus audio";
+  return null;
+}
