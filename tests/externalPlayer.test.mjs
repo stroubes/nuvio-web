@@ -84,6 +84,8 @@ test("Web Video Caster is told the type and never loads the link as a page", () 
   assert.equal(params.get("mime_type"), "video/x-matroska");
   assert.equal(params.get("poster"), "https://img.example/silo.jpg");
   assert.deepEqual(params.getAll("header"), ["Referer: https://addon.example/"]);
+  // The stream address is the final parameter, as the caster's examples show.
+  assert.ok(result.endsWith(`&url=${encodeURIComponent("https://cdn.example/dl/a0e39abd-4493")}`));
 });
 
 test("the media type comes from the file name, then the URL, then nowhere", () => {

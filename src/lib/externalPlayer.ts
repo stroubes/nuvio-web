@@ -352,13 +352,17 @@ export function webVideoCasterUrl(
     headers?: Record<string, string>;
   } = {},
 ) {
-  const query = new URLSearchParams({ url, title, skip_page_load: "true" });
+  const query = new URLSearchParams({ title, skip_page_load: "true" });
   const mime = mediaMimeType(url, options.filename);
   if (mime) query.set("mime_type", mime);
   if (options.subtitleUrl) query.set("subtitle", options.subtitleUrl);
   if (options.posterUrl) query.set("poster", options.posterUrl);
   for (const [name, value] of Object.entries(options.headers ?? {}))
     query.append("header", `${name}: ${value}`);
+  // Last, as in every example the caster documents. A parser that reads the
+  // stream address as "everything after url=" would otherwise take the rest
+  // of this query as part of it.
+  query.set("url", url);
   return `wvc-x-callback://open?${query.toString()}`;
 }
 
